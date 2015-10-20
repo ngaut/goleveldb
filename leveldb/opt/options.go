@@ -147,6 +147,9 @@ type Options struct {
 	// The default value is nil
 	AltFilters []filter.Filter
 
+	// The default value is nil
+	CompactFilter filter.CompactionFilter
+
 	// BlockCacher provides cache algorithm for LevelDB 'sorted table' block caching.
 	// Specify NoCacher to disable caching algorithm.
 	//

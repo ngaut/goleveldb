@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/journal"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/storage"
@@ -51,9 +52,10 @@ type session struct {
 	manifestWriter storage.Writer
 	manifestFile   storage.File
 
-	stCompPtrs []iKey   // compaction pointers; need external synchronization
-	stVersion  *version // current version
-	vmu        sync.Mutex
+	stCompPtrs    []iKey // compaction pointers; need external synchronization
+	compactFilter filter.CompactionFilter
+	stVersion     *version // current version
+	vmu           sync.Mutex
 }
 
 // Creates new initialized session instance.
@@ -66,9 +68,10 @@ func newSession(stor storage.Storage, o *opt.Options) (s *session, err error) {
 		return
 	}
 	s = &session{
-		stor:       stor,
-		storLock:   storLock,
-		stCompPtrs: make([]iKey, o.GetNumLevel()),
+		stor:          stor,
+		storLock:      storLock,
+		stCompPtrs:    make([]iKey, o.GetNumLevel()),
+		compactFilter: o.CompactFilter,
 	}
 	s.setOptions(o)
 	s.tops = newTableOps(s)

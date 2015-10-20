@@ -408,6 +408,7 @@ func (b *tableCompactionBuilder) run(cnt *compactionTransactCounter) error {
 
 	iter := b.c.newIterator()
 	defer iter.Release()
+	filter := b.db.s.compactFilter
 	for i := 0; iter.Next(); i++ {
 		// Incr transact counter.
 		cnt.incr()
@@ -483,7 +484,20 @@ func (b *tableCompactionBuilder) run(cnt *compactionTransactCounter) error {
 			b.kerrCnt++
 		}
 
-		if err := b.appendKV(ikey, iter.Value()); err != nil {
+		v := iter.Value()
+		if filter != nil {
+			remove, newVal := filter.Filter(ukey, v)
+			if remove {
+				b.dropCnt++
+				continue
+			}
+
+			if newVal != nil {
+				v = newVal
+			}
+		}
+
+		if err := b.appendKV(ikey, v); err != nil {
 			return err
 		}
 	}
